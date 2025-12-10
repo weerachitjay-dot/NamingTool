@@ -77,7 +77,13 @@ export const APP_CONFIG = {
         { brand: "FWD", product: "Delight Care", url: "https://www.silkspan.com/online/fwd/delight-care-80-80/" },
         { brand: "FWD", product: "BIG3", url: "https://www.silkspan.com/fwd/big-3/" },
         { brand: "FWD", product: "For Pension 85/7", url: "https://www.silkspan.com/online/fwd/for-pension85-7/" },
-        { brand: "FWD", product: "For Saving 20/10", url: "https://www.silkspan.com/online/fwd-for-saving-20-10/" }
+        { brand: "FWD", product: "For Saving 20/10", url: "https://www.silkspan.com/online/fwd-for-saving-20-10/" },
+        { brand: "SILKSPAN", product: "Home", url: "https://www.silkspan.com/" },
+        { brand: "SILKSPAN", product: "Car-insurance", url: "https://www.silkspan.com/car-insurance/" },
+        { brand: "SILKSPAN", product: "Type1", url: "https://www.silkspan.com/car-insurance/type1/" },
+        { brand: "SILKSPAN", product: "Type2+", url: "https://www.silkspan.com/car-insurance/type2plus/" },
+        { brand: "SILKSPAN", product: "Type3+", url: "https://www.silkspan.com/car-insurance/type3plus/" },
+        { brand: "SILKSPAN", product: "Type3", url: "https://www.silkspan.com/car-insurance/type3/" }
     ],
 
     linkChannels: [

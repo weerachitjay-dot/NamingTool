@@ -24,6 +24,7 @@ const LinkGenForm = () => {
     // Form State
     const [formData, setFormData] = useState({
         baseUrl: '',
+        customBaseUrl: '', // New field for Custom Override
         params: '',
         bannerId: '',
     });
@@ -34,6 +35,12 @@ const LinkGenForm = () => {
 
     const handleProductSelect = (prodName) => {
         setProduct(prodName);
+        if (prodName === 'Custom (อื่นๆ)') {
+            setFormData(prev => ({ ...prev, baseUrl: '' }));
+            // Optionally focus custom input?
+            return;
+        }
+
         const match = APP_CONFIG.linkProducts.find(p => p.product === prodName);
         if (match) {
             setFormData(prev => ({ ...prev, baseUrl: match.url }));
@@ -59,7 +66,9 @@ const LinkGenForm = () => {
 
     // 2. Build Final URL
     useEffect(() => {
-        let url = formData.baseUrl;
+        // Priority: Custom Final URL > Selected Product Base URL
+        let url = formData.customBaseUrl || formData.baseUrl;
+
         if (!url) {
             setFinalLink('');
             return;
@@ -67,25 +76,9 @@ const LinkGenForm = () => {
 
         const parts = [];
 
-        // Manual Params first? Or TypeDealer logic? 
-        // User asked for "Select Product -> URL Params -> Final URL" visually, 
-        // but Logic wise, we append parameters standardly.
-
         if (formData.params) parts.push(formData.params);
-
-        // BannerID (from input)
         if (formData.bannerId) parts.push(`bannerid=${formData.bannerId}`);
-
-        // TypeDealer 
-        // User didn't specify the KEY for this logic update, only "TypeDealer คือ..."
-        // Assuming we still append it as `typedealer=...` OR if this is for the INTERNAL tools.
-        // User mentioned "สร้าง TypeDealer-internal" link.
-        // But for the Final Link, usually we want it too. 
-        // I will adhere to previous behavior: append it if it exists.
-        // TypeDealer Result is NOT added to Final URL per user request
-        // if (typeDealerResult) {
-        //    parts.push(`typedealer=${typeDealerResult}`);
-        // }
+        // TypeDealer removed from final URL per previous request
 
         if (parts.length > 0) {
             const joiner = url.includes('?') ? '&' : '?';
@@ -188,13 +181,13 @@ const LinkGenForm = () => {
                 </a>
             </div>
 
-            {/* 3. PRODUCT */}
+            {/* 3. PRODUCT & CUSTOM URL */}
             <div className="mb-8 bg-slate-50 p-6 rounded-lg border border-slate-200">
                 <h3 className="text-lg font-bold text-slate-700 mb-4 flex items-center gap-2">
                     <span className="bg-indigo-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-sm">2</span>
-                    Select Product
+                    Select Product / Custom URL
                 </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
                     <div>
                         <label className="block text-sm font-medium text-slate-700 mb-1">Filter Brand</label>
                         <select value={brand} onChange={e => setBrand(e.target.value)} className="input-field">
@@ -206,9 +199,22 @@ const LinkGenForm = () => {
                         <label className="block text-sm font-medium text-slate-700 mb-1">Product Name</label>
                         <select value={product} onChange={e => handleProductSelect(e.target.value)} className="input-field whitespace-normal h-auto py-2">
                             <option value="">Select Product...</option>
+                            <option value="Custom (อื่นๆ)">Custom (อื่นๆ)</option>
                             {filteredProducts.map(p => <option key={p.product} value={p.product}>{p.product}</option>)}
                         </select>
                     </div>
+                </div>
+
+                <div className="relative">
+                    <label className="block text-sm font-bold text-slate-700 mb-1">Custom FINAL URL (Override)</label>
+                    <input
+                        type="url"
+                        value={formData.customBaseUrl}
+                        onChange={e => setFormData({ ...formData, customBaseUrl: e.target.value })}
+                        className={`input-field ${formData.customBaseUrl ? 'border-emerald-500 ring-1 ring-emerald-500 bg-emerald-50' : ''}`}
+                        placeholder="Paste any URL here to override the selection above..."
+                    />
+                    {formData.customBaseUrl && <span className="absolute right-3 top-9 text-xs font-bold text-emerald-600 bg-emerald-100 px-2 py-1 rounded">Active</span>}
                 </div>
             </div>
 
@@ -230,11 +236,7 @@ const LinkGenForm = () => {
                 </div>
             </div>
 
-            {/* STICKY FINAL URL - MOVED TO BOTTOM PER REQ? OR KEEP TOP? 
-                User said "ลำดับตามเดิม Select Product URL Parameters FINAL URL".
-                Usually Final URL is bottom result. I will place it at the bottom but maybe sticky.
-            */}
-
+            {/* STICKY FINAL URL */}
             <div className="bg-indigo-900 text-white rounded-lg p-6 shadow-xl sticky bottom-4 z-50 border-2 border-indigo-400">
                 <label className="text-xs font-bold text-indigo-300 tracking-wider mb-2 block uppercase flex justify-between">
                     <span>Final URL</span>
