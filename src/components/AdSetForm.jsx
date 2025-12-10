@@ -1,0 +1,114 @@
+import React, { useState, useEffect } from 'react';
+import { APP_CONFIG } from '../config';
+import { useLocalStorage } from '../hooks/useLocalStorage';
+import HistoryTable from './HistoryTable';
+
+const AdSetForm = () => {
+    const [history, setHistory] = useLocalStorage('adset_history', []);
+
+    const [formData, setFormData] = useState({
+        type: '',
+        cat: '',
+        aud: '',
+        loc: '',
+        gender: 'ALL',
+        age: ''
+    });
+
+    const [finalName, setFinalName] = useState('');
+
+    useEffect(() => {
+        const { type, cat, aud, loc, gender, age } = formData;
+        const parts = [
+            type || "TYPE",
+            cat || "CAT",
+            aud || "AUD",
+            loc || "LOC",
+            gender || "ALL",
+            age || "AGE"
+        ];
+        setFinalName(parts.join('_').toUpperCase());
+    }, [formData]);
+
+    const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
+
+    const handleSave = () => {
+        if (!formData.type) return alert("Please fill required fields.");
+        setHistory([{ AdSetName: finalName, ...formData, Timestamp: new Date().toLocaleString() }, ...history]);
+        alert("Saved!");
+    };
+
+    const handleCopy = () => {
+        navigator.clipboard.writeText(finalName);
+        alert("Copied!");
+    };
+
+    const handleExport = () => {
+        if (history.length === 0) return alert("No data");
+        // Reuse export logic or abstract it
+        const headers = Object.keys(history[0]);
+        const csv = [headers.join(','), ...history.map(row => headers.map(h => `"${row[h]}"`).join(','))].join('\n');
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'AdSet_History.csv'; a.click();
+    };
+
+    return (
+        <div className="card animate-fade-in">
+            <h2 className="text-2xl font-bold text-center mb-1">Ad Set Generator</h2>
+            <p className="text-center text-slate-500 mb-8">Define your target audience</p>
+
+            <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-6 mb-8 text-center sticky top-20 z-40 shadow-sm">
+                <label className="text-xs font-bold text-indigo-500 tracking-wider mb-2 block uppercase">Generated Ad Set Name</label>
+                <div className="flex items-center gap-2">
+                    <input readOnly value={finalName} className="w-full text-center text-xl font-mono font-bold text-slate-800 bg-white border border-indigo-100 rounded-md py-3 px-4 focus:outline-none" />
+                    <button onClick={handleCopy} className="bg-indigo-600 text-white px-6 py-3 rounded-md font-bold hover:bg-indigo-700 transition-colors">COPY</button>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Target Type</label>
+                    <select name="type" value={formData.type} onChange={handleChange} className="input-field">
+                        <option value="">Select Type...</option>
+                        {["INTEREST", "LOOKALIKE", "CUSTOM"].map(t => <option key={t} value={t}>{t}</option>)}
+                    </select>
+                </div>
+                <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Category</label>
+                    <input list="adset_cat_list" name="cat" value={formData.cat} onChange={handleChange} className="input-field" placeholder="Select or Type..." />
+                    <datalist id="adset_cat_list">
+                        {APP_CONFIG.adSetCategories.map(c => <option key={c} value={c} />)}
+                    </datalist>
+                </div>
+                <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Audience Name</label>
+                    <input type="text" name="aud" value={formData.aud} onChange={handleChange} className="input-field" placeholder="Detailed targeting name..." />
+                </div>
+                <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Location</label>
+                    <input list="loc_list" name="loc" value={formData.loc} onChange={handleChange} className="input-field" />
+                    <datalist id="loc_list">
+                        {APP_CONFIG.locations.map(l => <option key={l} value={l} />)}
+                    </datalist>
+                </div>
+                <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Gender</label>
+                    <select name="gender" value={formData.gender} onChange={handleChange} className="input-field">
+                        <option value="ALL">All Information</option>
+                        <option value="MALE">Male</option>
+                        <option value="FEMALE">Female</option>
+                    </select>
+                </div>
+                <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Age</label>
+                    <input type="text" name="age" value={formData.age} onChange={handleChange} className="input-field" placeholder="e.g. 25-45" />
+                </div>
+            </div>
+
+            <button onClick={handleSave} className="btn-primary mt-8">Save Output</button>
+            <HistoryTable title="Ad Set" data={history} onClear={() => setHistory([])} onExport={handleExport} />
+        </div>
+    );
+};
+
+export default AdSetForm;
