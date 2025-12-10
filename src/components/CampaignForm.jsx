@@ -45,15 +45,15 @@ const CampaignForm = () => {
     // Auto-generate Name
     useEffect(() => {
         const formattedPage = formData.page ? `(${formData.page})` : '';
+        const brandCat = (formData.branding || '') + (formData.category || '');
 
         const parts = [
             formData.objective,
-            formData.branding,
-            formData.category,
+            brandCat, // Merged Branding+Category
             formData.product,
             formData.audience,
-            formData.date, // Format YYYY-MM-DD (Default)
-            formattedPage, // Format (Page)
+            formData.date,
+            formattedPage,
             formData.addon
         ].filter(Boolean);
 
