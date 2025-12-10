@@ -71,12 +71,20 @@ export const APP_CONFIG = {
         { brand: "THAILIFE", product: "Health (เฮลท์เหมาสบายใจ)", url: "https://www.silkspan.com/online/life-insurance/thailife-health-sabai-jai/" },
         { brand: "THAILIFE", product: "Topup (เติมเงินยามป่วย)", url: "https://www.silkspan.com/online/life-insurance/thailife-topup/" },
         { brand: "CHUBB", product: "Chubb Life", url: "https://www.silkspan.com/online/chubb/chubb-life/" },
-        { brand: "GENERALI", product: "GEN-HEALTH-LUMP-SUM-PLUS", url: "https://www.silkspan.com/health/generali/gen-health-lump-sum-plus/" },
+        { brand: "GENERALI", product: "Generali Health", url: "https://www.silkspan.com/health/generali/gen-health-lump-sum-plus/" },
         { brand: "GENERALI", product: "Generali Senior", url: "https://www.silkspan.com/life-insurance/generali/gen-senior-55/" },
         { brand: "FWD", product: "Easy-E-CANCER", url: "https://www.silkspan.com/fwd/easy-e-cancer/" },
         { brand: "FWD", product: "Delight Care", url: "https://www.silkspan.com/online/fwd/delight-care-80-80/" },
         { brand: "FWD", product: "BIG3", url: "https://www.silkspan.com/fwd/big-3/" },
         { brand: "FWD", product: "For Pension 85/7", url: "https://www.silkspan.com/online/fwd/for-pension85-7/" },
         { brand: "FWD", product: "For Saving 20/10", url: "https://www.silkspan.com/online/fwd-for-saving-20-10/" }
+    ],
+
+    linkChannels: [
+        "Facebook ads", "Line ads", "Line BC", "Line Voom", "New", "Google ads", "Tiktok ads"
+    ],
+
+    linkBuilderTypes: [
+        "Car Insurance", "Lead Agency"
     ]
 };

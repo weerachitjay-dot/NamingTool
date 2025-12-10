@@ -8,22 +8,28 @@ const LinkGenForm = () => {
     const [brand, setBrand] = useState('');
     const [product, setProduct] = useState('');
 
-    // Derived state for dropdowns
     const uniqueBrands = [...new Set(APP_CONFIG.linkProducts.map(p => p.brand))];
     const filteredProducts = brand
         ? APP_CONFIG.linkProducts.filter(p => p.brand === brand)
         : APP_CONFIG.linkProducts;
 
+    // Builder State
+    const [builder, setBuilder] = useState({
+        channel: '',
+        type: '',
+        post: '',
+        isInternalType: true, // "สร้าง TypeDealer-internal"
+        isInternalBanner: true // "สร้าง BannerID-internal"
+    });
+
+    // Form State
     const [formData, setFormData] = useState({
         baseUrl: '',
-        builderType: '', // "Link Builder: TypeDealer"
-        utmSource: '',
-        utmMedium: '',
-        utmCampaign: '',
-        utmContent: '',
-        utmTerm: '',
+        params: '',
         bannerId: '',
     });
+
+    const [typeDealerResult, setTypeDealerResult] = useState('');
     const [finalLink, setFinalLink] = useState('');
 
     const handleProductSelect = (prodName) => {
@@ -35,6 +41,21 @@ const LinkGenForm = () => {
         }
     };
 
+    // 1. Build TypeDealer Result
+    useEffect(() => {
+        // Logic: Try to match "Legacy" format. 
+        // User didn't specify format, but usually it's Channel_Type_Post
+        // We will just concatenate non-empty parts with underscores
+        const parts = [
+            builder.channel,
+            builder.type,
+            builder.post
+        ].filter(Boolean);
+
+        setTypeDealerResult(parts.join('_'));
+    }, [builder.channel, builder.type, builder.post]);
+
+    // 2. Build Final URL
     useEffect(() => {
         let url = formData.baseUrl;
         if (!url) {
@@ -44,25 +65,32 @@ const LinkGenForm = () => {
 
         const parts = [];
 
-        // 1. URL Parameters (Manual)
+        // Manual Params
         if (formData.params) parts.push(formData.params);
 
-        // 2. TypeDealer
-        if (formData.builderType) parts.push(`type=${formData.builderType}`);
+        // Banner ID (Internal Toggle logic?)
+        // User said: "สร้าง BannerID-internal /" -> Checked means include it?
+        if (builder.isInternalBanner && formData.bannerId) {
+            parts.push(`bannerid=${formData.bannerId}`);
+        } else if (!builder.isInternalBanner && formData.bannerId) {
+            // If unchecked, do we exclude it? Assuming yes.
+        }
 
-        // 3. Banner ID
-        if (formData.bannerId) parts.push(`bannerid=${formData.bannerId}`);
+        // TypeDealer (Internal Toggle)
+        if (builder.isInternalType && typeDealerResult) {
+            parts.push(`typedealer=${typeDealerResult}`);
+        }
 
         if (parts.length > 0) {
             const joiner = url.includes('?') ? '&' : '?';
             url += joiner + parts.join('&');
         }
         setFinalLink(url);
-    }, [formData]);
+    }, [formData, builder, typeDealerResult]);
 
     const handleSave = () => {
         if (!finalLink) return alert("No link generated");
-        setHistory([{ FinalURL: finalLink, ...formData, Timestamp: new Date().toLocaleString() }, ...history]);
+        setHistory([{ FinalURL: finalLink, ...formData, typeDealer: typeDealerResult, Timestamp: new Date().toLocaleString() }, ...history]);
         alert("Saved!");
     };
 
@@ -88,51 +116,97 @@ const LinkGenForm = () => {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6 pb-6 border-b border-slate-100">
-                <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Filter Brand</label>
-                    <select value={brand} onChange={e => setBrand(e.target.value)} className="input-field">
-                        <option value="">All Brands</option>
-                        {uniqueBrands.map(b => <option key={b} value={b}>{b}</option>)}
-                    </select>
-                </div>
-                <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Select Product</label>
-                    <select value={product} onChange={e => handleProductSelect(e.target.value)} className="input-field whitespace-normal h-auto py-2">
-                        <option value="">Select Product...</option>
-                        {filteredProducts.map(p => <option key={p.product} value={p.product}>{p.product}</option>)}
-                    </select>
-                </div>
-            </div>
-
-            <div className="space-y-6">
-                <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Base URL</label>
-                    <input type="url" value={formData.baseUrl} onChange={e => setFormData({ ...formData, baseUrl: e.target.value })} className="input-field" placeholder="https://..." />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* 1. BUILDER: TypeDealer */}
+            <div className="mb-8 bg-slate-50 p-6 rounded-lg border border-slate-200">
+                <h3 className="text-lg font-bold text-slate-700 mb-4 flex items-center gap-2">
+                    <span className="bg-indigo-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-sm">1</span>
+                    Builder: TypeDealer
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                     <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-1">Builder: TypeDealer</label>
-                        <select value={formData.builderType} onChange={e => setFormData({ ...formData, builderType: e.target.value })} className="input-field">
-                            <option value="">Default</option>
-                            <option value="Dealer">Dealer</option>
-                            <option value="Direct">Direct</option>
-                            <option value="Agent">Agent</option>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">Channel</label>
+                        <select value={builder.channel} onChange={e => setBuilder({ ...builder, channel: e.target.value })} className="input-field">
+                            <option value="">Select Channel...</option>
+                            {APP_CONFIG.linkChannels?.map(c => <option key={c} value={c}>{c}</option>)}
                         </select>
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-1">URL Parameters</label>
-                        <input type="text" value={formData.params} onChange={e => setFormData({ ...formData, params: e.target.value })} className="input-field" placeholder="utm_source=facebook&..." />
+                        <label className="block text-sm font-medium text-slate-700 mb-1">Type</label>
+                        <select value={builder.type} onChange={e => setBuilder({ ...builder, type: e.target.value })} className="input-field">
+                            <option value="">Select Type...</option>
+                            {APP_CONFIG.linkBuilderTypes?.map(t => <option key={t} value={t}>{t}</option>)}
+                        </select>
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-1">Banner ID</label>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">Post (Max 35)</label>
+                        <input maxLength={35} type="text" value={builder.post} onChange={e => setBuilder({ ...builder, post: e.target.value })} className="input-field" placeholder="Campaign Name..." />
+                    </div>
+                </div>
+
+                <div className="bg-white border border-slate-200 p-3 rounded-md mb-4 flex justify-between items-center">
+                    <span className="text-sm font-bold text-slate-500 uppercase">TypeDealer Result:</span>
+                    <code className="text-indigo-600 font-bold">{typeDealerResult || "..."}</code>
+                </div>
+
+                <div className="flex gap-6">
+                    <label className="flex items-center gap-2 cursor-pointer select-none">
+                        <input type="checkbox" checked={builder.isInternalType} onChange={e => setBuilder({ ...builder, isInternalType: e.target.checked })} className="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500" />
+                        <span className="text-sm text-slate-700">สร้าง TypeDealer-internal</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer select-none">
+                        <input type="checkbox" checked={builder.isInternalBanner} onChange={e => setBuilder({ ...builder, isInternalBanner: e.target.checked })} className="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500" />
+                        <span className="text-sm text-slate-700">สร้าง BannerID-internal</span>
+                    </label>
+                </div>
+            </div>
+
+            {/* 2. PARAMETERS */}
+            <div className="mb-8 bg-slate-50 p-6 rounded-lg border border-slate-200">
+                <h3 className="text-lg font-bold text-slate-700 mb-4 flex items-center gap-2">
+                    <span className="bg-indigo-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-sm">2</span>
+                    URL Parameters
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">Custom Parameters</label>
+                        <input type="text" value={formData.params} onChange={e => setFormData({ ...formData, params: e.target.value })} className="input-field" placeholder="e.g. pnlid=123" />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">Banner ID (Optional)</label>
                         <input type="text" value={formData.bannerId} onChange={e => setFormData({ ...formData, bannerId: e.target.value })} className="input-field" placeholder="12345" />
                     </div>
                 </div>
             </div>
 
-            <button onClick={handleSave} className="btn-primary mt-8">Save Output</button>
+            {/* 3. PRODUCT */}
+            <div className="mb-8 bg-slate-50 p-6 rounded-lg border border-slate-200">
+                <h3 className="text-lg font-bold text-slate-700 mb-4 flex items-center gap-2">
+                    <span className="bg-indigo-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-sm">3</span>
+                    Select Product
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">Filter Brand</label>
+                        <select value={brand} onChange={e => setBrand(e.target.value)} className="input-field">
+                            <option value="">All Brands</option>
+                            {uniqueBrands.map(b => <option key={b} value={b}>{b}</option>)}
+                        </select>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">Product Name</label>
+                        <select value={product} onChange={e => handleProductSelect(e.target.value)} className="input-field whitespace-normal h-auto py-2">
+                            <option value="">Select Product...</option>
+                            {filteredProducts.map(p => <option key={p.product} value={p.product}>{p.product}</option>)}
+                        </select>
+                    </div>
+                </div>
+                <div className="mt-4">
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Target Base URL</label>
+                    <input type="url" value={formData.baseUrl} onChange={e => setFormData({ ...formData, baseUrl: e.target.value })} className="input-field bg-slate-100" readOnly />
+                </div>
+            </div>
+
+            <button onClick={handleSave} className="btn-primary">Save Output</button>
             <HistoryTable title="Link" data={history} onClear={() => setHistory([])} onExport={handleExport} />
         </div>
     );
