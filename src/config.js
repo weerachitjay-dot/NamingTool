@@ -59,7 +59,7 @@ export const APP_CONFIG = {
     ],
 
     locations: [
-        "Bangkok", "Chiang Mai", "Phuket", "Nationwide"
+        "TH", "BKK", "UPC"
     ],
 
     // 3. LINK GENERATOR

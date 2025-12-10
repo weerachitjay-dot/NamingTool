@@ -15,6 +15,8 @@ const AdSetForm = () => {
         age: ''
     });
 
+    const [manualLoc, setManualLoc] = useState(false);
+
     const [finalName, setFinalName] = useState('');
 
     useEffect(() => {
@@ -85,11 +87,30 @@ const AdSetForm = () => {
                     <input type="text" name="aud" value={formData.aud} onChange={handleChange} className="input-field" placeholder="Detailed targeting name..." />
                 </div>
                 <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Location</label>
-                    <input list="loc_list" name="loc" value={formData.loc} onChange={handleChange} className="input-field" />
-                    <datalist id="loc_list">
-                        {APP_CONFIG.locations.map(l => <option key={l} value={l} />)}
-                    </datalist>
+                    <label className="block text-sm font-medium text-slate-700 mb-1 flex justify-between">
+                        Location
+                        <button
+                            onClick={() => setManualLoc(!manualLoc)}
+                            className="text-xs text-indigo-500 hover:text-indigo-700 underline font-normal"
+                        >
+                            {manualLoc ? "Switch to List" : "Type Manual"}
+                        </button>
+                    </label>
+                    {manualLoc ? (
+                        <input
+                            type="text"
+                            name="loc"
+                            value={formData.loc}
+                            onChange={handleChange}
+                            className="input-field border-indigo-300 ring-1 ring-indigo-100"
+                            placeholder="Type custom location..."
+                        />
+                    ) : (
+                        <select name="loc" value={formData.loc} onChange={handleChange} className="input-field">
+                            <option value="">Select Location...</option>
+                            {APP_CONFIG.locations.map(l => <option key={l} value={l}>{l}</option>)}
+                        </select>
+                    )}
                 </div>
                 <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1">Gender</label>
