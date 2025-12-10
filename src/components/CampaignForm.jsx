@@ -45,7 +45,7 @@ const CampaignForm = () => {
     // Auto-generate Name
     useEffect(() => {
         const formattedPage = formData.page ? `(${formData.page})` : '';
-        const brandCat = (formData.branding || '') + (formData.category || '');
+        const brandCat = [formData.branding, formData.category].filter(Boolean).join('+');
 
         const parts = [
             formData.objective,
