@@ -57,7 +57,7 @@ const CampaignForm = () => {
             formData.addon
         ].filter(Boolean);
 
-        setFormData(prev => ({ ...prev, name: parts.join('_') }));
+        setFormData(prev => ({ ...prev, name: parts.join('_').toUpperCase() }));
     }, [
         formData.objective, formData.branding, formData.category, formData.product,
         formData.audience, formData.page, formData.date, formData.addon
