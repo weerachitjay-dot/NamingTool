@@ -82,9 +82,10 @@ const LinkGenForm = () => {
         // User mentioned "สร้าง TypeDealer-internal" link.
         // But for the Final Link, usually we want it too. 
         // I will adhere to previous behavior: append it if it exists.
-        if (typeDealerResult) {
-            parts.push(`typedealer=${typeDealerResult}`);
-        }
+        // TypeDealer Result is NOT added to Final URL per user request
+        // if (typeDealerResult) {
+        //    parts.push(`typedealer=${typeDealerResult}`);
+        // }
 
         if (parts.length > 0) {
             const joiner = url.includes('?') ? '&' : '?';
