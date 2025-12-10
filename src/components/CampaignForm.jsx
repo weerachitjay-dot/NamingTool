@@ -44,14 +44,16 @@ const CampaignForm = () => {
 
     // Auto-generate Name
     useEffect(() => {
+        const formattedPage = formData.page ? `(${formData.page})` : '';
+
         const parts = [
             formData.objective,
             formData.branding,
             formData.category,
             formData.product,
             formData.audience,
-            formData.page,
-            formData.date.replace(/-/g, ''), // Format date YYYYMMDD
+            formData.date, // Format YYYY-MM-DD (Default)
+            formattedPage, // Format (Page)
             formData.addon
         ].filter(Boolean);
 
