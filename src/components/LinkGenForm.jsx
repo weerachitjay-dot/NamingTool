@@ -43,15 +43,18 @@ const LinkGenForm = () => {
 
     // 1. Build TypeDealer Result
     useEffect(() => {
-        const fullString = (builder.channel || '') + (builder.type || '') + (builder.post || '');
+        let rawString = (builder.channel || '') + (builder.type || '') + (builder.post || '');
 
-        if (fullString.length > 50) {
-            setErrorMsg(`Warning: Total length is ${fullString.length} chars (Limit: 50)`);
+        // Formatting Rules: Lowercase, replace space/plus/underscore with dash
+        let formatted = rawString.toLowerCase().replace(/[\s+_]/g, '-');
+
+        if (formatted.length > 50) {
+            setErrorMsg(`Warning: Total length is ${formatted.length} chars (Limit: 50)`);
         } else {
             setErrorMsg('');
         }
 
-        setTypeDealerResult(fullString);
+        setTypeDealerResult(formatted);
     }, [builder]);
 
     // 2. Build Final URL
@@ -127,14 +130,14 @@ const LinkGenForm = () => {
                         <label className="block text-sm font-medium text-slate-700 mb-1">Channel</label>
                         <select value={builder.channel} onChange={e => setBuilder({ ...builder, channel: e.target.value })} className="input-field">
                             <option value="">Select Channel...</option>
-                            {APP_CONFIG.linkChannels?.map(c => <option key={c} value={c}>{c}</option>)}
+                            {APP_CONFIG.linkChannels?.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
                         </select>
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-slate-700 mb-1">Type</label>
                         <select value={builder.type} onChange={e => setBuilder({ ...builder, type: e.target.value })} className="input-field">
                             <option value="">Select Type...</option>
-                            {APP_CONFIG.linkBuilderTypes?.map(t => <option key={t} value={t}>{t}</option>)}
+                            {APP_CONFIG.linkBuilderTypes?.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
                         </select>
                     </div>
                     <div>

@@ -81,10 +81,16 @@ export const APP_CONFIG = {
     ],
 
     linkChannels: [
-        "Ads-Fb-", "Ads-Line-", "Ads-news-", "Ads-gg-", "Ads-tiktok-"
+        { label: "Facebook ads", value: "Ads-Fb-" },
+        { label: "Line ads", value: "Ads-Line-" },
+        { label: "Line BC", value: "BC-Line-" },
+        { label: "New", value: "Ads-news-" },
+        { label: "Google ads", value: "Ads-gg-" },
+        { label: "Tiktok ads", value: "Ads-tiktok-" }
     ],
 
     linkBuilderTypes: [
-        "home-", "ins-", "life-"
+        { label: "Car Insurance", value: "ins-" },
+        { label: "Lead Agency", value: "life-" }
     ]
 };
