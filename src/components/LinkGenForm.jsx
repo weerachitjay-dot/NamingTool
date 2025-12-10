@@ -42,26 +42,20 @@ const LinkGenForm = () => {
             return;
         }
 
-        const params = new URLSearchParams();
+        const parts = [];
 
-        // 1. UTM Builder
-        if (formData.utmSource) params.append('utm_source', formData.utmSource);
-        if (formData.utmMedium) params.append('utm_medium', formData.utmMedium);
-        if (formData.utmCampaign) params.append('utm_campaign', formData.utmCampaign);
-        if (formData.utmContent) params.append('utm_content', formData.utmContent);
-        if (formData.utmTerm) params.append('utm_term', formData.utmTerm);
+        // 1. URL Parameters (Manual)
+        if (formData.params) parts.push(formData.params);
 
-        // 2. TypeDealer (If user meant adding a specific parameter)
-        // Adjust this logic if "TypeDealer" means something else
-        if (formData.builderType) params.append('type', formData.builderType);
+        // 2. TypeDealer
+        if (formData.builderType) parts.push(`type=${formData.builderType}`);
 
         // 3. Banner ID
-        if (formData.bannerId) params.append('bannerid', formData.bannerId);
+        if (formData.bannerId) parts.push(`bannerid=${formData.bannerId}`);
 
-        const queryString = params.toString();
-        if (queryString) {
+        if (parts.length > 0) {
             const joiner = url.includes('?') ? '&' : '?';
-            url += joiner + queryString;
+            url += joiner + parts.join('&');
         }
         setFinalLink(url);
     }, [formData]);
@@ -103,53 +97,37 @@ const LinkGenForm = () => {
                     </select>
                 </div>
                 <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Select Product (Auto-Fill)</label>
-                    <select value={product} onChange={e => handleProductSelect(e.target.value)} className="input-field">
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Select Product</label>
+                    <select value={product} onChange={e => handleProductSelect(e.target.value)} className="input-field whitespace-normal h-auto py-2">
                         <option value="">Select Product...</option>
                         {filteredProducts.map(p => <option key={p.product} value={p.product}>{p.product}</option>)}
                     </select>
                 </div>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-6">
                 <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1">Base URL</label>
                     <input type="url" value={formData.baseUrl} onChange={e => setFormData({ ...formData, baseUrl: e.target.value })} className="input-field" placeholder="https://..." />
                 </div>
 
-                {/* BUILDER SECTION */}
-                <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
-                    <h3 className="font-semibold text-slate-700 mb-4">Link Builder</h3>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1">TypeDealer (Builder)</label>
-                            <select value={formData.builderType} onChange={e => setFormData({ ...formData, builderType: e.target.value })} className="input-field">
-                                <option value="">Default</option>
-                                <option value="Dealer">Dealer</option>
-                                <option value="Direct">Direct</option>
-                                <option value="Agent">Agent</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1">Banner ID</label>
-                            <input type="text" value={formData.bannerId} onChange={e => setFormData({ ...formData, bannerId: e.target.value })} className="input-field" placeholder="12345" />
-                        </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">Builder: TypeDealer</label>
+                        <select value={formData.builderType} onChange={e => setFormData({ ...formData, builderType: e.target.value })} className="input-field">
+                            <option value="">Default</option>
+                            <option value="Dealer">Dealer</option>
+                            <option value="Direct">Direct</option>
+                            <option value="Agent">Agent</option>
+                        </select>
                     </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1">UTM Source</label>
-                            <input type="text" value={formData.utmSource} onChange={e => setFormData({ ...formData, utmSource: e.target.value })} className="input-field" placeholder="facebook" />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1">UTM Medium</label>
-                            <input type="text" value={formData.utmMedium} onChange={e => setFormData({ ...formData, utmMedium: e.target.value })} className="input-field" placeholder="cpc" />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1">UTM Campaign</label>
-                            <input type="text" value={formData.utmCampaign} onChange={e => setFormData({ ...formData, utmCampaign: e.target.value })} className="input-field" placeholder="promo" />
-                        </div>
+                    <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">URL Parameters</label>
+                        <input type="text" value={formData.params} onChange={e => setFormData({ ...formData, params: e.target.value })} className="input-field" placeholder="utm_source=facebook&..." />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">Banner ID</label>
+                        <input type="text" value={formData.bannerId} onChange={e => setFormData({ ...formData, bannerId: e.target.value })} className="input-field" placeholder="12345" />
                     </div>
                 </div>
             </div>
