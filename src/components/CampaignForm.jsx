@@ -1,10 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { APP_CONFIG } from '../config';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import HistoryTable from './HistoryTable';
+import { useConfig } from '../context/ConfigContext';
+import { saveData } from '../services/GoogleSheetsService';
 
 const CampaignForm = () => {
+    const { config, loading } = useConfig();
     const [history, setHistory] = useLocalStorage('campaign_history', []);
+
+    // Config Options from Context (Fallback to empty if loading)
+    const objectives = config?.objectives || [];
+    const brandings = config?.brandings || [];
+    const categories = config?.categories || [];
+    const productsByBrand = config?.productsByBrand || {};
+    const pages = config?.pages || [];
+
     const [formData, setFormData] = useState({
         name: '',
         objective: '',
@@ -22,20 +32,17 @@ const CampaignForm = () => {
         branding: false,
         category: false,
         product: false,
-        audience: false, // User didn't asking for this specifically but good for consistency? Prompt only asked for Obj, Brand, Cat, Prod, Page. I'll stick to request.
+        audience: false,
         page: false
     });
 
     // Derived Products based on Branding
-    // If Manual Branding is ON, we show all products or let user type?
-    // User requested "Product" to have custom/type yourself too.
-    const availableProducts = (formData.branding && APP_CONFIG.productsByBrand[formData.branding])
-        ? APP_CONFIG.productsByBrand[formData.branding]
+    const availableProducts = (formData.branding && productsByBrand[formData.branding])
+        ? productsByBrand[formData.branding]
         : [];
 
     const toggleManual = (field) => {
         setManualMode(prev => ({ ...prev, [field]: !prev[field] }));
-        // Optionally clear the value or keep it? Keeping it is better UX (e.g. modify existing)
     };
 
     const handleChange = (field, value) => {
@@ -45,12 +52,19 @@ const CampaignForm = () => {
     // Auto-generate Name
     useEffect(() => {
         const formattedPage = formData.page ? `(${formData.page})` : '';
+
+        // 1. Branding + Category (Joined by +)
         const brandCat = [formData.branding, formData.category].filter(Boolean).join('+');
+
+        // 2. Add Product (Joined by - if brandCat exists)
+        let middleSection = brandCat;
+        if (formData.product) {
+            middleSection = middleSection ? `${middleSection}-${formData.product}` : formData.product;
+        }
 
         const parts = [
             formData.objective,
-            brandCat, // Merged Branding+Category
-            formData.product,
+            middleSection,
             formData.audience,
             formData.date,
             formattedPage,
@@ -63,10 +77,31 @@ const CampaignForm = () => {
         formData.audience, formData.page, formData.date, formData.addon
     ]);
 
-    const handleSave = () => {
+    const handleSave = async () => {
         if (!formData.name) return alert("Incomplete Name");
+
+        // 1. Save Local
         setHistory([{ ...formData, Timestamp: new Date().toLocaleString() }, ...history]);
-        alert("Saved!");
+
+        // 2. Save to Google Sheets
+        alert("Saving...");
+        // Payload matches the columns defined in Setup Instructions
+        // We send the whole object, the script will pick what it needs or save raw JSON if generic.
+        // Assuming Script expects "OP, BRAND, CAT, PAGE" specifically? 
+        // For flexibility, let's send these fields.
+        const payload = {
+            Objective: formData.objective,
+            Branding: formData.branding,
+            Category: formData.category,
+            Product: formData.product,
+            Audience: formData.audience,
+            Page: formData.page,
+            Date: formData.date,
+            GeneratedName: formData.name
+        };
+
+        await saveData('campaign', payload);
+        alert("Saved to Database!");
     };
 
     const handleCopy = () => {
@@ -101,7 +136,7 @@ const CampaignForm = () => {
                         type="text"
                         value={formData[fieldKey]}
                         onChange={(e) => handleChange(fieldKey, e.target.value)}
-                        className="input-field border-indigo-300 ring-1 ring-indigo-100" // Highlight manual input
+                        className="input-field border-indigo-300 ring-1 ring-indigo-100"
                         placeholder={`Type ${label}...`}
                     />
                 ) : (
@@ -110,7 +145,7 @@ const CampaignForm = () => {
                         onChange={(e) => handleChange(fieldKey, e.target.value)}
                         className="input-field"
                     >
-                        <option value="">{placeholder}</option>
+                        <option value="">{loading ? "Loading..." : placeholder}</option>
                         {options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
                     </select>
                 )}
@@ -122,11 +157,10 @@ const CampaignForm = () => {
         <div className="card animate-fade-in pb-24">
             <h2 className="text-2xl font-bold text-center mb-6">Campaign Name Generator</h2>
 
-            {/* Generated Name Display - Font Size Reduced per Request */}
+            {/* Generated Name Display */}
             <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-6 mb-8 text-center sticky top-20 z-40 shadow-sm">
                 <label className="text-xs font-bold text-indigo-500 tracking-wider mb-2 block uppercase">Generated Campaign Name</label>
                 <div className="flex items-center gap-2">
-                    {/* Changed text-2xl/xl to text-lg for readability */}
                     <div className="w-full text-center text-lg font-mono text-slate-800 bg-white border border-indigo-100 rounded-md py-3 px-4 break-all min-h-[50px] flex items-center justify-center">
                         {formData.name || <span className="text-slate-300 italic">Complete the form...</span>}
                     </div>
@@ -137,25 +171,25 @@ const CampaignForm = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 space-y-2">
 
                 {/* Objective */}
-                {renderField("Objective", "objective", APP_CONFIG.objectives)}
+                {renderField("Objective", "objective", objectives)}
 
                 {/* Branding */}
-                {renderField("Branding", "branding", APP_CONFIG.brandings)}
+                {renderField("Branding", "branding", brandings)}
 
                 {/* Category */}
-                {renderField("Category", "category", APP_CONFIG.categories)}
+                {renderField("Category", "category", categories)}
 
                 {/* Product */}
                 {renderField("Product", "product", availableProducts, formData.branding ? "Select Product..." : "Select Branding First")}
 
-                {/* Audience (Not requested to be manual, but keeping standard select) */}
+                {/* Audience */}
                 <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1">Audience</label>
                     <input type="text" value={formData.audience} onChange={e => handleChange('audience', e.target.value)} className="input-field" placeholder="Target Audience..." />
                 </div>
 
                 {/* Page */}
-                {renderField("Page (Optional)", "page", APP_CONFIG.pages)}
+                {renderField("Page (Optional)", "page", pages)}
 
                 {/* Date */}
                 <div>
@@ -170,7 +204,7 @@ const CampaignForm = () => {
                 </div>
             </div>
 
-            <button onClick={handleSave} className="btn-primary mt-8">Save to History</button>
+            <button onClick={handleSave} className="btn-primary mt-8">Save to Database</button>
             <HistoryTable title="Campaign" data={history} onClear={() => setHistory([])} onExport={handleExport} />
         </div>
     );

@@ -6,6 +6,8 @@ const Layout = ({ activeTab, onTabChange, children }) => {
         { id: 'adset', label: 'Ad Set' },
         { id: 'ad', label: 'Ad Name' },
         { id: 'link', label: 'Link Gen' },
+        { id: 'nameparser', label: 'Name Parser' },
+        { id: 'phonenormalizer', label: 'Phone Normalizer' },
     ];
 
     return (
