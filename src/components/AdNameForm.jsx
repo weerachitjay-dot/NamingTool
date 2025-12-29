@@ -1,17 +1,24 @@
 import React, { useState, useEffect } from 'react';
-import { APP_CONFIG } from '../config';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import HistoryTable from './HistoryTable';
+import { useConfig } from '../context/ConfigContext';
+import { saveData } from '../services/GoogleSheetsService';
 
 const AdNameForm = () => {
+    const { config, loading } = useConfig();
     const [history, setHistory] = useLocalStorage('ad_history', []);
+
+    // Config options
+    const pages = config?.pages || [];
+    const brandings = config?.brandings || [];
+    const productsByBrand = config?.productsByBrand || {};
 
     const [formData, setFormData] = useState({
         page: '',
         brand: '',
         prod: '',
-        formatType: 'IMG', // Dropdown value
-        customFormatType: '', // Manual input for Custom
+        formatType: 'IMG',
+        customFormatType: '',
         creative: '',
         date: new Date().toISOString().slice(0, 10),
     });
@@ -22,28 +29,22 @@ const AdNameForm = () => {
 
     useEffect(() => {
         if (formData.brand) {
-            setAvailableProducts(APP_CONFIG.productsByBrand[formData.brand] || []);
+            setAvailableProducts(productsByBrand[formData.brand] || []);
         } else {
             setAvailableProducts([]);
         }
-    }, [formData.brand]);
+    }, [formData.brand, productsByBrand]);
 
     useEffect(() => {
         const formatDateMMM = (dateString) => {
             if (!dateString) return "DATE";
             const d = new Date(dateString);
             const months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
-            // Format DDMM e.g. 01JAN. Or default req? Previous code was DDMMM. 
-            // User requested Ad Set Date Format? No, Campaign Gen was YYYY-MM-DD. 
-            // Keeping Ad Name format as DDMMM per legacy unless requested.
-            // Wait, previous code was:  ${String(d.getDate()).padStart(2, '0')}${months[d.getMonth()]}
             return `${String(d.getDate()).padStart(2, '0')}${months[d.getMonth()]}`;
         };
 
         const { page, brand, prod, formatType, customFormatType, creative, date } = formData;
-
         let typeVal = formatType === 'Custom' ? customFormatType : formatType;
-
         let prefix = page ? `(${page})` : "PAGE";
         let brandProd = brand || "BRAND";
         if (prod) brandProd += `-${prod}`;
@@ -55,18 +56,30 @@ const AdNameForm = () => {
             typeVal || "TYPE",
             formatDateMMM(date)
         ];
-
         setFinalName(parts.join('_').toUpperCase());
 
     }, [formData]);
 
     const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
-    const handleSave = () => {
+    const handleSave = async () => {
         if (!formData.brand) return alert("Please fill required fields.");
         setHistory([{ AdName: finalName, ...formData, Timestamp: new Date().toLocaleString() }, ...history]);
-        alert("Saved!");
+
+        // Save to Google
+        alert("Saving...");
+        // User requested: Facebook Page, Brand, Product, Format Type
+        await saveData('ad', {
+            Page: formData.page,
+            Brand: formData.brand,
+            Product: formData.prod,
+            Format: formData.formatType === 'Custom' ? formData.customFormatType : formData.formatType,
+            Creative: formData.creative,
+            GeneratedName: finalName
+        });
+        alert("Saved to Database!");
     };
+
     const handleCopy = () => { navigator.clipboard.writeText(finalName); alert("Copied!"); };
     const handleExport = () => {
         if (history.length === 0) return alert("No data");
@@ -94,14 +107,14 @@ const AdNameForm = () => {
                     <label className="block text-sm font-medium text-slate-700 mb-1">Facebook Page</label>
                     <input list="page_list_ad" name="page" value={formData.page} onChange={handleChange} className="input-field" placeholder="Select or Type..." />
                     <datalist id="page_list_ad">
-                        {APP_CONFIG.pages.map(p => <option key={p} value={p} />)}
+                        {pages.map(p => <option key={p} value={p} />)}
                     </datalist>
                 </div>
                 <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1">Brand</label>
                     <select name="brand" value={formData.brand} onChange={handleChange} className="input-field">
-                        <option value="">Select Brand...</option>
-                        {APP_CONFIG.brandings.map(b => <option key={b} value={b}>{b}</option>)}
+                        <option value="">{loading ? "Loading..." : "Select Brand..."}</option>
+                        {brandings.map(b => <option key={b} value={b}>{b}</option>)}
                     </select>
                 </div>
                 <div>

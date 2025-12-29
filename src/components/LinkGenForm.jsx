@@ -1,18 +1,26 @@
 import React, { useState, useEffect } from 'react';
-import { APP_CONFIG } from '../config';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import HistoryTable from './HistoryTable';
+import { useConfig } from '../context/ConfigContext';
+import { saveData } from '../services/GoogleSheetsService';
 
 const LinkGenForm = () => {
+    const { config, loading } = useConfig();
     const [history, setHistory] = useLocalStorage('link_history', []);
+
+    // Config options
+    const linkChannels = config?.linkChannels || [];
+    const linkBuilderTypes = config?.linkBuilderTypes || [];
+    const linkProducts = config?.linkProducts || [];
+
     const [brand, setBrand] = useState('');
     const [product, setProduct] = useState('');
 
-    // Config Data
-    const uniqueBrands = [...new Set(APP_CONFIG.linkProducts.map(p => p.brand))];
+    // Filter Logic
+    const uniqueBrands = [...new Set(linkProducts.map(p => p.brand))];
     const filteredProducts = brand
-        ? APP_CONFIG.linkProducts.filter(p => p.brand === brand)
-        : APP_CONFIG.linkProducts;
+        ? linkProducts.filter(p => p.brand === brand)
+        : linkProducts;
 
     // Builder State
     const [builder, setBuilder] = useState({
@@ -24,7 +32,7 @@ const LinkGenForm = () => {
     // Form State
     const [formData, setFormData] = useState({
         baseUrl: '',
-        customBaseUrl: '', // New field for Custom Override
+        customBaseUrl: '',
         params: '',
         bannerId: '',
     });
@@ -37,11 +45,10 @@ const LinkGenForm = () => {
         setProduct(prodName);
         if (prodName === 'Custom (อื่นๆ)') {
             setFormData(prev => ({ ...prev, baseUrl: '' }));
-            // Optionally focus custom input?
             return;
         }
 
-        const match = APP_CONFIG.linkProducts.find(p => p.product === prodName);
+        const match = linkProducts.find(p => p.product === prodName);
         if (match) {
             setFormData(prev => ({ ...prev, baseUrl: match.url }));
             if (!brand) setBrand(match.brand);
@@ -51,8 +58,6 @@ const LinkGenForm = () => {
     // 1. Build TypeDealer Result
     useEffect(() => {
         let rawString = (builder.channel || '') + (builder.type || '') + (builder.post || '');
-
-        // Formatting Rules: Lowercase, replace space/plus/underscore with dash
         let formatted = rawString.toLowerCase().replace(/[\s+_]/g, '-');
 
         if (formatted.length > 50) {
@@ -66,7 +71,6 @@ const LinkGenForm = () => {
 
     // 2. Build Final URL
     useEffect(() => {
-        // Priority: Custom Final URL > Selected Product Base URL
         let url = formData.customBaseUrl || formData.baseUrl;
 
         if (!url) {
@@ -78,7 +82,6 @@ const LinkGenForm = () => {
 
         if (formData.params) parts.push(formData.params);
         if (formData.bannerId) parts.push(`bannerid=${formData.bannerId}`);
-        // TypeDealer removed from final URL per previous request
 
         if (parts.length > 0) {
             const joiner = url.includes('?') ? '&' : '?';
@@ -87,10 +90,21 @@ const LinkGenForm = () => {
         setFinalLink(url);
     }, [formData, typeDealerResult]);
 
-    const handleSave = () => {
+    const handleSave = async () => {
         if (!finalLink) return alert("No link generated");
         setHistory([{ FinalURL: finalLink, ...formData, typeDealer: typeDealerResult, Timestamp: new Date().toLocaleString() }, ...history]);
-        alert("Saved!");
+
+        // Save to Google
+        alert("Saving...");
+        // Suggested columns: Channel, Type, Brand, Product Name, FinalURL
+        await saveData('link', {
+            Channel: builder.channel,
+            Type: builder.type,
+            Brand: brand,
+            ProductName: product,
+            FinalURL: finalLink
+        });
+        alert("Saved to Database!");
     };
 
     const handleCopy = (text) => {
@@ -123,15 +137,15 @@ const LinkGenForm = () => {
                     <div>
                         <label className="block text-sm font-medium text-slate-700 mb-1">Channel</label>
                         <select value={builder.channel} onChange={e => setBuilder({ ...builder, channel: e.target.value })} className="input-field">
-                            <option value="">Select Channel...</option>
-                            {APP_CONFIG.linkChannels?.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
+                            <option value="">{loading ? "Loading..." : "Select Channel..."}</option>
+                            {linkChannels?.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
                         </select>
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-slate-700 mb-1">Type</label>
                         <select value={builder.type} onChange={e => setBuilder({ ...builder, type: e.target.value })} className="input-field">
-                            <option value="">Select Type...</option>
-                            {APP_CONFIG.linkBuilderTypes?.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+                            <option value="">{loading ? "Loading..." : "Select Type..."}</option>
+                            {linkBuilderTypes?.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
                         </select>
                     </div>
                     <div>
@@ -191,14 +205,14 @@ const LinkGenForm = () => {
                     <div>
                         <label className="block text-sm font-medium text-slate-700 mb-1">Filter Brand</label>
                         <select value={brand} onChange={e => setBrand(e.target.value)} className="input-field">
-                            <option value="">All Brands</option>
+                            <option value="">{loading ? "Loading..." : "All Brands"}</option>
                             {uniqueBrands.map(b => <option key={b} value={b}>{b}</option>)}
                         </select>
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-slate-700 mb-1">Product Name</label>
                         <select value={product} onChange={e => handleProductSelect(e.target.value)} className="input-field whitespace-normal h-auto py-2">
-                            <option value="">Select Product...</option>
+                            <option value="">{loading ? "Loading..." : "Select Product..."}</option>
                             <option value="Custom (อื่นๆ)">Custom (อื่นๆ)</option>
                             {filteredProducts.map(p => <option key={p.product} value={p.product}>{p.product}</option>)}
                         </select>

@@ -1,10 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { APP_CONFIG } from '../config';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import HistoryTable from './HistoryTable';
+import { useConfig } from '../context/ConfigContext';
+import { saveData } from '../services/GoogleSheetsService';
 
 const AdSetForm = () => {
+    const { config, loading } = useConfig();
     const [history, setHistory] = useLocalStorage('adset_history', []);
+
+    // Config options
+    const adSetCategories = config?.adSetCategories || [];
+    const locations = config?.locations || [];
 
     const [formData, setFormData] = useState({
         type: '',
@@ -16,7 +22,6 @@ const AdSetForm = () => {
     });
 
     const [manualLoc, setManualLoc] = useState(false);
-
     const [finalName, setFinalName] = useState('');
 
     useEffect(() => {
@@ -34,10 +39,22 @@ const AdSetForm = () => {
 
     const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
-    const handleSave = () => {
+    const handleSave = async () => {
         if (!formData.type) return alert("Please fill required fields.");
         setHistory([{ AdSetName: finalName, ...formData, Timestamp: new Date().toLocaleString() }, ...history]);
-        alert("Saved!");
+
+        // Save to Google
+        alert("Saving...");
+        await saveData('adset', {
+            Type: formData.type,
+            Category: formData.cat,
+            Audience: formData.aud,
+            Location: formData.loc,
+            Gender: formData.gender,
+            Age: formData.age,
+            GeneratedName: finalName
+        });
+        alert("Saved to Database!");
     };
 
     const handleCopy = () => {
@@ -47,7 +64,6 @@ const AdSetForm = () => {
 
     const handleExport = () => {
         if (history.length === 0) return alert("No data");
-        // Reuse export logic or abstract it
         const headers = Object.keys(history[0]);
         const csv = [headers.join(','), ...history.map(row => headers.map(h => `"${row[h]}"`).join(','))].join('\n');
         const blob = new Blob([csv], { type: 'text/csv' });
@@ -79,7 +95,7 @@ const AdSetForm = () => {
                     <label className="block text-sm font-medium text-slate-700 mb-1">Category</label>
                     <input list="adset_cat_list" name="cat" value={formData.cat} onChange={handleChange} className="input-field" placeholder="Select or Type..." />
                     <datalist id="adset_cat_list">
-                        {APP_CONFIG.adSetCategories.map(c => <option key={c} value={c} />)}
+                        {adSetCategories.map(c => <option key={c} value={c} />)}
                     </datalist>
                 </div>
                 <div>
@@ -107,8 +123,8 @@ const AdSetForm = () => {
                         />
                     ) : (
                         <select name="loc" value={formData.loc} onChange={handleChange} className="input-field">
-                            <option value="">Select Location...</option>
-                            {APP_CONFIG.locations.map(l => <option key={l} value={l}>{l}</option>)}
+                            <option value="">{loading ? "Loading..." : "Select Location..."}</option>
+                            {locations.map(l => <option key={l} value={l}>{l}</option>)}
                         </select>
                     )}
                 </div>
