@@ -150,12 +150,11 @@ export const ConfigProvider = ({ children }) => {
                     // Headers: Brand, DisplayName, CodeName, BaseURL
                     const map = {};
                     data.productMap2026.forEach(row => {
-                        const brand = row[0];
-                        const displayName = row[1];
-                        const codeName = row[2];
-                        const baseUrl = row[3];
+                        // [Brand, DisplayName, CodeName, BaseURL]
+                        const [brand, displayName, codeName, baseUrl] = row;
 
-                        if (brand && displayName) {
+                        // Check if Brand exists (skip empty rows)
+                        if (brand) {
                             if (!map[brand]) map[brand] = [];
                             map[brand].push({ displayName, codeName, baseUrl });
                         }
