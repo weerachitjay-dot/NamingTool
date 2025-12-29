@@ -47,10 +47,12 @@ const CampaignForm = () => {
         const formattedPage = formData.page ? `(${formData.page})` : '';
         const brandCat = [formData.branding, formData.category].filter(Boolean).join('+');
 
+        // Combine Brand+Cat and Product with a hyphen
+        const productPart = [brandCat, formData.product].filter(Boolean).join('-');
+
         const parts = [
             formData.objective,
-            brandCat, // Merged Branding+Category
-            formData.product,
+            productPart, // brand+cat-product
             formData.audience,
             formData.date,
             formattedPage,

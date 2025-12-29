@@ -4,17 +4,26 @@ import CampaignForm from './components/CampaignForm';
 import AdSetForm from './components/AdSetForm';
 import AdNameForm from './components/AdNameForm';
 import LinkGenForm from './components/LinkGenForm';
+import LinkGenForm2026 from './components/LinkGenForm2026'; // Import
+import NameParser from './components/NameParser';
+import PhoneNormalizer from './components/PhoneNormalizer';
+import { ConfigProvider } from './context/ConfigContext';
 
 function App() {
   const [activeTab, setActiveTab] = useState('campaign');
 
   return (
-    <Layout activeTab={activeTab} onTabChange={setActiveTab}>
-      {activeTab === 'campaign' && <CampaignForm />}
-      {activeTab === 'adset' && <AdSetForm />}
-      {activeTab === 'ad' && <AdNameForm />}
-      {activeTab === 'link' && <LinkGenForm />}
-    </Layout>
+    <ConfigProvider>
+      <Layout activeTab={activeTab} onTabChange={setActiveTab}>
+        {activeTab === 'campaign' && <CampaignForm />}
+        {activeTab === 'adset' && <AdSetForm />}
+        {activeTab === 'ad' && <AdNameForm />}
+        {activeTab === 'link' && <LinkGenForm />}
+        {activeTab === 'link2026' && <LinkGenForm2026 />}
+        {activeTab === 'nameparser' && <NameParser />}
+        {activeTab === 'phonenormalizer' && <PhoneNormalizer />}
+      </Layout>
+    </ConfigProvider>
   );
 }
 
