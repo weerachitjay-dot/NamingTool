@@ -26,13 +26,15 @@ function doGet(e) {
     const products = readSheet(ss, 'Options_Products');
     const linkOpts = readSheet(ss, 'Options_Link'); 
     const linkOpts2026 = readSheet(ss, 'Options_Link2026'); // NEW 2026
+    const productMap2026 = readSheet(ss, 'Options_ProductMap2026'); // NEW 2026 Map
     
     return ContentService.createTextOutput(JSON.stringify({
       campaign: campaignOpts,
       adSet: adSetOpts,
       products: products,
       linkConfig: linkOpts,
-      linkConfig2026: linkOpts2026 // NEW 2026
+      linkConfig2026: linkOpts2026,
+      productMap2026: productMap2026 // Include in response
     })).setMimeType(ContentService.MimeType.JSON);
   }
 
@@ -246,10 +248,31 @@ function setupDatabase() {
     ["Sequence", "S7", "s7"],
     ["Sequence", "S8", "s8"],
     ["Sequence", "S9", "s9"],
-    ["Sequence", "S10", "s10"]
+    ["Sequence", "S10", "s10"],
+    ["Sequence", "S11", "s11"],
+    ["Sequence", "S12", "s12"],
+    ["Sequence", "S13", "s13"],
+    ["Sequence", "S14", "s14"],
+    ["Sequence", "S15", "s15"],
+    ["Sequence", "S16", "s16"],
+    ["Sequence", "S17", "s17"],
+    ["Sequence", "S18", "s18"],
+    ["Sequence", "S19", "s19"],
+    ["Sequence", "S20", "s20"]
   ]);
 
-  // 6. Create History Sheets
+  // 6. Setup Options_ProductMap2026 (NEW - Brand/Product/Url Logic)
+  setupSheet(ss, 'Options_ProductMap2026', ["Brand", "DisplayName", "CodeName", "BaseURL"], [
+    ["FWD", "Easy E-Cancer", "easy-e-cancer", "https://www.silkspan.com/fwd/easy-e-cancer/"],
+    ["FWD", "Delight Care", "delight-care", "https://www.silkspan.com/online/fwd/delight-care-80-80/"],
+    ["FWD", "Big 3", "big3", "https://www.silkspan.com/fwd/big-3/"],
+    ["THAILIFE", "Buphakari (สูงวัยมีทรัพย์)", "buphakari", "https://www.silkspan.com/online/life-insurance/thailife-extra-senior-ab"],
+    ["THAILIFE", "Morradok (สูงวัยไร้กังวล)", "morradok", "https://www.silkspan.com/online/life-insurance/thailife-senior-ab/"],
+    ["GENERALI", "Health Lump Sum Plus", "health-lump-sum", "https://www.silkspan.com/health/generali/gen-health-lump-sum-plus/"],
+    ["CHUBBLIFE", "Chubb Life", "chubb-life", "https://www.silkspan.com/online/chubb/chubb-life/"]
+  ]);
+
+  // 7. Create History Sheets
   createHistorySheet(ss, 'History_Campaign', ["Timestamp", "Objective", "Branding", "Category", "Product", "Audience", "Page", "Date", "GeneratedName"]);
   createHistorySheet(ss, 'History_AdSet', ["Timestamp", "Type", "Category", "Audience", "Location", "Gender", "Age", "GeneratedName"]);
   createHistorySheet(ss, 'History_AdName', ["Timestamp", "Page", "Brand", "Product", "Format", "Creative", "GeneratedName"]);

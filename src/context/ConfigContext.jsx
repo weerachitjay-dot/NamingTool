@@ -141,8 +141,28 @@ export const ConfigProvider = ({ children }) => {
                             { label: "Video", value: "video" },
                             { label: "Live", value: "live" }
                         ],
-                        sequence: Array.from({ length: 10 }, (_, i) => ({ label: `S${i + 1}`, value: `s${i + 1}` }))
+                        sequence: Array.from({ length: 20 }, (_, i) => ({ label: `S${i + 1}`, value: `s${i + 1}` }))
                     };
+                }
+
+                // Parse Options_ProductMap2026
+                if (data.productMap2026 && data.productMap2026.length > 0) {
+                    // Headers: Brand, DisplayName, CodeName, BaseURL
+                    const map = {};
+                    data.productMap2026.forEach(row => {
+                        const brand = row[0];
+                        const displayName = row[1];
+                        const codeName = row[2];
+                        const baseUrl = row[3];
+
+                        if (brand && displayName) {
+                            if (!map[brand]) map[brand] = [];
+                            map[brand].push({ displayName, codeName, baseUrl });
+                        }
+                    });
+                    newConfig.productMap2026 = map;
+                } else {
+                    newConfig.productMap2026 = {};
                 }
 
                 setConfig(newConfig);

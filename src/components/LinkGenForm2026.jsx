@@ -8,16 +8,14 @@ const LinkGenForm2026 = () => {
     const { config } = useConfig();
     const [history, setHistory] = useLocalStorage('link_history_2026', []);
 
-    // Config Options (Fallbacks in case context isn't ready or empty)
+    // Config Options
     const options = config.linkOptions2026 || {
         source: [], method: [], platform: [], creative: [], sequence: []
     };
 
-    const uniqueBrands = [...new Set(config.linkProducts.map(p => p.brand))];
-    const [brand, setBrand] = useState('');
-    const filteredProducts = brand
-        ? config.linkProducts.filter(p => p.brand === brand)
-        : config.linkProducts;
+    // Product Map for 2026 (Refactored)
+    const productMap = config.productMap2026 || {};
+    const availableBrands = Object.keys(productMap);
 
     // Builder State
     const [builder, setBuilder] = useState({
@@ -25,60 +23,67 @@ const LinkGenForm2026 = () => {
         method: '',
         platform: '',
         creative: '',
-        date: new Date().toISOString().slice(0, 10).replace(/-/g, ''), // Default YYYYMMDD
+        date: new Date().toISOString().slice(0, 10).replace(/-/g, ''),
         sequence: 's1',
     });
 
-    // Custom Text Components (Field G)
-    const [customTextHelper, setCustomTextHelper] = useState({
+    // Unified State: Section 2 (Product & Destination)
+    // Controls both G-String and Final URL
+    const [gState, setGState] = useState({
         brand: '',
-        product: '',
+        productCode: '', // Internal code for G string
         freetext: ''
     });
 
-    // Form State
+    // Valid products for selected brand
+    const availableProducts = gState.brand ? productMap[gState.brand] : [];
+
+    // Form State (Destination URL)
     const [formData, setFormData] = useState({
-        baseUrl: '',
-        customBaseUrl: '',
+        baseUrl: '', // Automatically set by Product Selection
+        customBaseUrl: '', // User override
         params: '',
         bannerId: '',
     });
 
-    const [typeDealerResult, setTypeDealerResult] = useState('');
-    const [finalLink, setFinalLink] = useState('');
-    const [errorMsg, setErrorMsg] = useState('');
-    const [customTextError, setCustomTextError] = useState('');
+    // Handle Brand Change
+    const handleBrandChange = (e) => {
+        const newBrand = e.target.value;
+        setGState(prev => ({ ...prev, brand: newBrand, productCode: '' }));
+        // Reset URL if brand changes (optional, but cleaner)
+        setFormData(prev => ({ ...prev, baseUrl: '', customBaseUrl: '' }));
+    };
 
-    const handleProductSelect = (prodName) => {
-        if (prodName === 'Custom (อื่นๆ)') {
+    // Handle Product Change
+    const handleProductChange = (e) => {
+        const code = e.target.value;
+        setGState(prev => ({ ...prev, productCode: code }));
+
+        // Find match to set Base URL
+        if (gState.brand && code) {
+            const match = productMap[gState.brand].find(p => p.codeName === code);
+            if (match) {
+                // Set default Base URL, clear custom override
+                setFormData(prev => ({ ...prev, baseUrl: match.baseUrl, customBaseUrl: '' }));
+            }
+        } else {
             setFormData(prev => ({ ...prev, baseUrl: '' }));
-            return;
-        }
-
-        const match = config.linkProducts.find(p => p.product === prodName);
-        if (match) {
-            setFormData(prev => ({ ...prev, baseUrl: match.url }));
-            if (!brand) setBrand(match.brand);
-
-            // Auto-fill Custom Text Brand/Product if empty
-            if (!customTextHelper.brand) setCustomTextHelper(prev => ({ ...prev, brand: match.brand }));
-            if (!customTextHelper.product) setCustomTextHelper(prev => ({ ...prev, product: match.product }));
         }
     };
 
     // Auto-update Custom Text (G) and Validate
     const [customTextG, setCustomTextG] = useState('');
+    const [customTextError, setCustomTextError] = useState('');
 
     useEffect(() => {
+        // G String Construction: Brand-ProductCode-Freetext
         const parts = [
-            customTextHelper.brand,
-            customTextHelper.product,
-            customTextHelper.freetext
-        ].filter(Boolean); // Remote empty strings
+            gState.brand,
+            gState.productCode,
+            gState.freetext
+        ].filter(Boolean);
 
         let rawG = parts.join('-');
-
-        // Sanitize: lowercase, replace spaces/underscores with dashes
         rawG = rawG.toLowerCase().replace(/[\s+_]/g, '-');
 
         setCustomTextG(rawG);
@@ -89,17 +94,19 @@ const LinkGenForm2026 = () => {
             setCustomTextError('');
         }
 
-    }, [customTextHelper]);
+    }, [gState]);
 
     const handleDateChange = (e) => {
-        // Input type="date" returns YYYY-MM-DD
-        const val = e.target.value.replace(/-/g, ''); // -> YYYYMMDD
+        const val = e.target.value.replace(/-/g, '');
         setBuilder({ ...builder, date: val });
     };
 
     // 1. Build TypeDealer Result (A-B-C-D-E-F-G)
+    const [typeDealerResult, setTypeDealerResult] = useState('');
+    const [errorMsg, setErrorMsg] = useState('');
+    const [isDuplicate, setIsDuplicate] = useState(false);
+
     useEffect(() => {
-        // Format: A-B-C-D-E-F-G
         const A = builder.source;
         const B = builder.method;
         const C = builder.platform;
@@ -113,20 +120,32 @@ const LinkGenForm2026 = () => {
 
         setTypeDealerResult(fullString);
 
-        // General Warnings
+        // Duplicate Check
+        let dup = false;
+        if (builder.date && builder.sequence) {
+            const currentFormattedDate = `d${builder.date}`;
+            dup = history.some(h => h.Date === currentFormattedDate && h.Sequence === builder.sequence);
+        }
+        setIsDuplicate(dup);
+
         if (!A || !B || !C || !D || !E || !F) {
             setErrorMsg('Missing required fields.');
         } else if (customTextError) {
             setErrorMsg('Fix Custom Text errors.');
+        } else if (dup) {
+            setErrorMsg('Error: Duplicate Sequence for this Date.');
         } else {
             setErrorMsg('');
         }
 
-    }, [builder, customTextG, customTextError]);
+    }, [builder, customTextG, customTextError, history]);
 
 
     // 2. Build Final URL
+    const [finalLink, setFinalLink] = useState('');
+
     useEffect(() => {
+        // Use custom override if present, else default base
         let url = formData.customBaseUrl || formData.baseUrl;
 
         if (!url) {
@@ -138,16 +157,6 @@ const LinkGenForm2026 = () => {
         if (formData.params) parts.push(formData.params);
         if (formData.bannerId) parts.push(`bannerid=${formData.bannerId}`);
 
-        // Start with TypeDealer result in the query string? 
-        // Current requirement usually implies TypeDealer string is used for tracking parameter (e.g. utm_content or similar)
-        // OR simply just generating the string.
-        // Based on previous code, it seems we generated a string but didn't explicitly append it unless it was part of specific params.
-        // However, standard usually appends it as `utm_campaign` or similar. 
-        // *Revisiting previous LinkGenForm*: It didn't strictly append "typeDealerResult" to the URL automatically.
-        // It just generated the string for record keeping.
-
-        // We will keep it separate but available.
-
         if (parts.length > 0) {
             const joiner = url.includes('?') ? '&' : '?';
             url += joiner + parts.join('&');
@@ -158,6 +167,7 @@ const LinkGenForm2026 = () => {
     const handleSave = async () => {
         if (!typeDealerResult) return alert("TypeDealer string incomplete");
         if (customTextError) return alert("Please fix errors");
+        if (isDuplicate) return alert("Error: Duplicate Sequence. Please change Sequence or Date.");
 
         const row = {
             SourceType: builder.source,
@@ -174,7 +184,6 @@ const LinkGenForm2026 = () => {
 
         setHistory([row, ...history]);
 
-        // Save to Google Sheet
         const res = await saveData('link2026', row);
         if (res.result === 'Success') {
             alert("Saved to Google Sheet!");
@@ -270,37 +279,6 @@ const LinkGenForm2026 = () => {
                     </div>
                 </div>
 
-                {/* G */}
-                <div className="bg-white p-3 rounded border border-slate-200 mb-4">
-                    <label className="block text-xs font-bold text-slate-500 uppercase mb-2">G: Custom Text (Brand-Product-FreeText)</label>
-                    <div className="grid grid-cols-3 gap-2">
-                        <input
-                            placeholder="Brand"
-                            value={customTextHelper.brand}
-                            onChange={e => setCustomTextHelper({ ...customTextHelper, brand: e.target.value })}
-                            className="input-field text-sm"
-                        />
-                        <input
-                            placeholder="Product"
-                            value={customTextHelper.product}
-                            onChange={e => setCustomTextHelper({ ...customTextHelper, product: e.target.value })}
-                            className="input-field text-sm"
-                        />
-                        <input
-                            placeholder="FreeText"
-                            value={customTextHelper.freetext}
-                            onChange={e => setCustomTextHelper({ ...customTextHelper, freetext: e.target.value })}
-                            className="input-field text-sm"
-                        />
-                    </div>
-                    <div className="flex justify-between items-center mt-1">
-                        <span className="text-xs text-slate-400">Preview: {customTextG || '(empty)'}</span>
-                        <span className={`text-xs font-bold ${customTextError ? 'text-red-500' : 'text-slate-400'}`}>
-                            {customTextG.length}/45
-                        </span>
-                    </div>
-                </div>
-
                 {/* RESULT DISPLAY */}
                 <div className="bg-slate-800 text-white p-4 rounded-md flex flex-col sm:flex-row justify-between items-center gap-4">
                     <div className="flex-1 w-full overflow-hidden">
@@ -319,39 +297,99 @@ const LinkGenForm2026 = () => {
                 </div>
             </div>
 
-            {/* PRODUCT & URL SECTION (SIMPLIFIED FOR 2026) */}
+            {/* EXTERNAL LINKS BUTTONS */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+                <a
+                    href="https://www.silkspan.com/webpartner/group/"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex flex-col items-center justify-center p-4 bg-emerald-50 border border-emerald-200 rounded-lg hover:bg-emerald-100 transition-colors group text-center"
+                >
+                    <span className="text-emerald-700 font-bold mb-1 group-hover:underline">สร้าง TypeDealer-internal</span>
+                    <span className="text-xs text-emerald-500">Open External Tool ↗</span>
+                </a>
+
+                <a
+                    href="https://web.silkspan.com/Insurancedocument/BannerSet.aspx"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex flex-col items-center justify-center p-4 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors group text-center"
+                >
+                    <span className="text-blue-700 font-bold mb-1 group-hover:underline">สร้าง BannerID-internal</span>
+                    <span className="text-xs text-blue-500">Open External Tool ↗</span>
+                </a>
+            </div>
+
+            {/* 2. UNIFIED PRODUCT & DESTINATION SECTION */}
             <div className="mb-8 bg-slate-50 p-6 rounded-lg border border-slate-200">
                 <h3 className="text-lg font-bold text-slate-700 mb-4 flex items-center gap-2">
                     <span className="bg-indigo-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-sm">2</span>
-                    Target URL
+                    Product, Text & URL
                 </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
-                    <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-1">Filter Brand</label>
-                        <select value={brand} onChange={e => setBrand(e.target.value)} className="input-field">
-                            <option value="">All Brands</option>
-                            {uniqueBrands.map(b => <option key={b} value={b}>{b}</option>)}
+
+                {/* G: Brand, Product, Freetext */}
+                <div className="bg-white p-4 rounded-md border border-slate-200 mb-4 bg-yellow-50/30">
+                    <label className="block text-xs font-bold text-indigo-600 uppercase mb-2">
+                        Product Selection (G: Custom Text)
+                    </label>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mb-2">
+                        {/* 1. Brand */}
+                        <select value={gState.brand} onChange={handleBrandChange} className="input-field text-sm">
+                            <option value="">Select Brand...</option>
+                            {availableBrands.map(b => <option key={b} value={b}>{b}</option>)}
                         </select>
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-1">Product Name</label>
-                        <select onChange={e => handleProductSelect(e.target.value)} className="input-field h-auto py-2">
+
+                        {/* 2. Product */}
+                        <select value={gState.productCode} onChange={handleProductChange} className="input-field text-sm" disabled={!gState.brand}>
                             <option value="">Select Product...</option>
-                            <option value="Custom (อื่นๆ)">Custom (อื่นๆ)</option>
-                            {filteredProducts.map(p => <option key={p.product} value={p.product}>{p.product}</option>)}
+                            {availableProducts.map(p => (
+                                <option key={p.codeName} value={p.codeName}>
+                                    {p.displayName}
+                                </option>
+                            ))}
                         </select>
+
+                        {/* 3. Freetext */}
+                        <input
+                            placeholder="FreeText (Optional)"
+                            value={gState.freetext}
+                            onChange={e => setGState({ ...gState, freetext: e.target.value })}
+                            className="input-field text-sm"
+                        />
+                    </div>
+                    <div className="flex justify-between items-center px-1">
+                        <span className="text-xs text-slate-400">
+                            G String: {customTextG || '...'}
+                        </span>
+                        <span className={`text-xs font-bold ${customTextError ? 'text-red-500' : 'text-slate-400'}`}>
+                            {customTextG.length}/45
+                        </span>
                     </div>
                 </div>
+
+                {/* Base URL (Auto-set but Editable) */}
                 <div className="relative mb-4">
                     <label className="block text-sm font-bold text-slate-700 mb-1">Base URL</label>
                     <input
                         type="url"
                         value={formData.customBaseUrl || formData.baseUrl}
                         onChange={e => setFormData({ ...formData, customBaseUrl: e.target.value })}
-                        className="input-field"
-                        placeholder="https://..."
+                        className="input-field bg-slate-100"
+                        placeholder="Select Product above to auto-fill (or type to override)..."
                     />
+                    {formData.baseUrl && !formData.customBaseUrl && (
+                        <p className="text-xs text-slate-500 mt-1">
+                            Link from: {gState.brand} / {gState.productCode}
+                        </p>
+                    )}
+                    {formData.customBaseUrl && (
+                        <p className="text-xs text-orange-500 mt-1 font-bold">
+                            * Custom URL Override Active
+                        </p>
+                    )}
                 </div>
+
+                {/* Params & BannerID */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label className="block text-sm font-medium text-slate-700 mb-1">Params</label>
