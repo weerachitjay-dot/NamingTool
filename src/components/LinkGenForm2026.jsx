@@ -279,6 +279,46 @@ const LinkGenForm2026 = () => {
                     </div>
                 </div>
 
+                {/* G: Brand, Product, Freetext (MOVED HERE) */}
+                <div className="bg-white p-4 rounded-md border border-slate-200 mb-4 bg-yellow-50/30">
+                    <label className="block text-xs font-bold text-indigo-600 uppercase mb-2">
+                        G: Product Selection (Custom Text)
+                    </label>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mb-2">
+                        {/* 1. Brand */}
+                        <select value={gState.brand} onChange={handleBrandChange} className="input-field text-sm">
+                            <option value="">Select Brand...</option>
+                            {availableBrands.map(b => <option key={b} value={b}>{b}</option>)}
+                        </select>
+
+                        {/* 2. Product */}
+                        <select value={gState.productCode} onChange={handleProductChange} className="input-field text-sm" disabled={!gState.brand}>
+                            <option value="">Select Product...</option>
+                            {availableProducts.map(p => (
+                                <option key={p.codeName} value={p.codeName}>
+                                    {p.displayName}
+                                </option>
+                            ))}
+                        </select>
+
+                        {/* 3. Freetext */}
+                        <input
+                            placeholder="FreeText (Optional)"
+                            value={gState.freetext}
+                            onChange={e => setGState({ ...gState, freetext: e.target.value })}
+                            className="input-field text-sm"
+                        />
+                    </div>
+                    <div className="flex justify-between items-center px-1">
+                        <span className="text-xs text-slate-400">
+                            G String: {customTextG || '...'}
+                        </span>
+                        <span className={`text-xs font-bold ${customTextError ? 'text-red-500' : 'text-slate-400'}`}>
+                            {customTextG.length}/45
+                        </span>
+                    </div>
+                </div>
+
                 {/* RESULT DISPLAY */}
                 <div className="bg-slate-800 text-white p-4 rounded-md flex flex-col sm:flex-row justify-between items-center gap-4">
                     <div className="flex-1 w-full overflow-hidden">
@@ -320,52 +360,12 @@ const LinkGenForm2026 = () => {
                 </a>
             </div>
 
-            {/* 2. UNIFIED PRODUCT & DESTINATION SECTION */}
+            {/* 2. TARGET URL SECTION (Simplified) */}
             <div className="mb-8 bg-slate-50 p-6 rounded-lg border border-slate-200">
                 <h3 className="text-lg font-bold text-slate-700 mb-4 flex items-center gap-2">
                     <span className="bg-indigo-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-sm">2</span>
-                    Product, Text & URL
+                    Target URL & Parameters
                 </h3>
-
-                {/* G: Brand, Product, Freetext */}
-                <div className="bg-white p-4 rounded-md border border-slate-200 mb-4 bg-yellow-50/30">
-                    <label className="block text-xs font-bold text-indigo-600 uppercase mb-2">
-                        Product Selection (G: Custom Text)
-                    </label>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mb-2">
-                        {/* 1. Brand */}
-                        <select value={gState.brand} onChange={handleBrandChange} className="input-field text-sm">
-                            <option value="">Select Brand...</option>
-                            {availableBrands.map(b => <option key={b} value={b}>{b}</option>)}
-                        </select>
-
-                        {/* 2. Product */}
-                        <select value={gState.productCode} onChange={handleProductChange} className="input-field text-sm" disabled={!gState.brand}>
-                            <option value="">Select Product...</option>
-                            {availableProducts.map(p => (
-                                <option key={p.codeName} value={p.codeName}>
-                                    {p.displayName}
-                                </option>
-                            ))}
-                        </select>
-
-                        {/* 3. Freetext */}
-                        <input
-                            placeholder="FreeText (Optional)"
-                            value={gState.freetext}
-                            onChange={e => setGState({ ...gState, freetext: e.target.value })}
-                            className="input-field text-sm"
-                        />
-                    </div>
-                    <div className="flex justify-between items-center px-1">
-                        <span className="text-xs text-slate-400">
-                            G String: {customTextG || '...'}
-                        </span>
-                        <span className={`text-xs font-bold ${customTextError ? 'text-red-500' : 'text-slate-400'}`}>
-                            {customTextG.length}/45
-                        </span>
-                    </div>
-                </div>
 
                 {/* Base URL (Auto-set but Editable) */}
                 <div className="relative mb-4">
@@ -375,7 +375,7 @@ const LinkGenForm2026 = () => {
                         value={formData.customBaseUrl || formData.baseUrl}
                         onChange={e => setFormData({ ...formData, customBaseUrl: e.target.value })}
                         className="input-field bg-slate-100"
-                        placeholder="Select Product above to auto-fill (or type to override)..."
+                        placeholder="Select Product in Step 1 to auto-fill (or type here)..."
                     />
                     {formData.baseUrl && !formData.customBaseUrl && (
                         <p className="text-xs text-slate-500 mt-1">
