@@ -146,6 +146,9 @@ export const ConfigProvider = ({ children }) => {
                 }
 
                 // Parse Options_ProductMap2026
+                if (data.productMap2026) {
+                    console.log("Raw ProductMap2026:", data.productMap2026);
+                }
                 if (data.productMap2026 && data.productMap2026.length > 0) {
                     // Headers: Brand, DisplayName, CodeName, BaseURL
                     const map = {};
