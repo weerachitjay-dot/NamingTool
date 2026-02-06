@@ -1,4 +1,9 @@
 // CONFIGURATION FILE - NAMING TOOL
+// ⚠️ FALLBACK CONFIGURATION ONLY
+// Primary source: Google Sheets (Options_Campaign, Options_AdSet, Options_Products)
+// This file is used ONLY when Google Sheets is unavailable
+// To update config: Edit Google Sheets at Sheet ID: 1y0xlWvpBOscukaBM4g6VHHWRyMHICucHNvTxo4W91uI
+
 export const APP_CONFIG = {
     // 1. CAMPAIGN GENERATOR
     dates: {
@@ -37,17 +42,26 @@ export const APP_CONFIG = {
         "SILKSPAN"
     ],
 
-    categories: [
-        "LIFE", "SAVING", "Cl", "HEALTH"
+    products: [
+        "LIFE-SENIOR-SUPERCARE",
+        "LIFE-TERM10/10",
+        "SAVING-21/15",
+        "SAVING-FORPENSION857",
+        "SAVING-FOR-SAVING-2010",
+        "HEALTH-EASY-E-CANCER",
+        "HEALTH-BIG3",
+        "HEALTH-DELIGHT-CARE",
+        "SENIOR-GEN-SENIOR-55",
+        "GEN-HEALTH-LUMP-SUM-PLUS",
+        "MONEYSAVING14/6",
+        "HAPPY",
+        "SENIOR-MORRADOK",
+        "SENIOR-BONECARE",
+        "EXTRASENIOR-BUPHAKARI",
+        "TOPUP-SICK",
+        "SABAI-JAI",
+        "LEGACY-FIT-CI-CARE"
     ],
-
-    productsByBrand: {
-        "CHUBBLIFE": ["SAVING-21/15", "LIFE-TERM10/10"],
-        "FWD": ["SAVING-forpension857", "SAVING-For-Saving-2010", "HEALTH-Easy-E-CANCER", "HEALTH-BIG3", "HEALTH-delight-care"],
-        "GENERALI": ["SENIOR-GEN-SENIOR-55", "GEN-HEALTH-LUMP-SUM-PLUS"],
-        "THAILIFE": ["MONEYSAVING14/6", "HAPPY", "SENIOR-MORRADOK", "SENIOR-BONECARE", "EXTRASENIOR-BUPHAKARI", "TOPUP-SICK", "SABAI-JAI", "LEGACY-FIT-CI-CARE"],
-        "SILKSPAN": ["Home", "Car-insurance", "Type1", "Type2+", "Type3+", "Type3"]
-    },
 
     // 2. AD SET GENERATOR
     adSetCategories: [

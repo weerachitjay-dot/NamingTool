@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { APP_CONFIG } from '../config';
+import { useConfig } from '../context/ConfigContext';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import HistoryTable from './HistoryTable';
 
 const CampaignForm = () => {
+    const { config, isUsingGoogle, loadError } = useConfig();
     const [history, setHistory] = useLocalStorage('campaign_history', []);
     const [formData, setFormData] = useState({
         name: '',
         objective: '',
         branding: '',
-        category: '',
         product: '',
         audience: '',
         page: '',
@@ -20,18 +20,12 @@ const CampaignForm = () => {
     const [manualMode, setManualMode] = useState({
         objective: false,
         branding: false,
-        category: false,
         product: false,
-        audience: false, // User didn't asking for this specifically but good for consistency? Prompt only asked for Obj, Brand, Cat, Prod, Page. I'll stick to request.
         page: false
     });
 
-    // Derived Products based on Branding
-    // If Manual Branding is ON, we show all products or let user type?
-    // User requested "Product" to have custom/type yourself too.
-    const availableProducts = (formData.branding && APP_CONFIG.productsByBrand[formData.branding])
-        ? APP_CONFIG.productsByBrand[formData.branding]
-        : [];
+    // Products list from config (no longer filtered by brand)
+    const availableProducts = config.products || [];
 
     const toggleManual = (field) => {
         setManualMode(prev => ({ ...prev, [field]: !prev[field] }));
@@ -45,14 +39,13 @@ const CampaignForm = () => {
     // Auto-generate Name
     useEffect(() => {
         const formattedPage = formData.page ? `(${formData.page})` : '';
-        const brandCat = [formData.branding, formData.category].filter(Boolean).join('+');
 
-        // Combine Brand+Cat and Product with a hyphen
-        const productPart = [brandCat, formData.product].filter(Boolean).join('-');
+        // Simplified: Brand-Product (no Category)
+        const productPart = [formData.branding, formData.product].filter(Boolean).join('-');
 
         const parts = [
             formData.objective,
-            productPart, // brand+cat-product
+            productPart, // brand-product
             formData.audience,
             formData.date,
             formattedPage,
@@ -61,7 +54,7 @@ const CampaignForm = () => {
 
         setFormData(prev => ({ ...prev, name: parts.join('_').toUpperCase() }));
     }, [
-        formData.objective, formData.branding, formData.category, formData.product,
+        formData.objective, formData.branding, formData.product,
         formData.audience, formData.page, formData.date, formData.addon
     ]);
 
@@ -124,6 +117,28 @@ const CampaignForm = () => {
         <div className="card animate-fade-in pb-24">
             <h2 className="text-2xl font-bold text-center mb-6">Campaign Name Generator</h2>
 
+            {/* Google Sheets Status Banner */}
+            {isUsingGoogle ? (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4 flex items-center gap-2">
+                    <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span className="text-sm text-green-800 font-medium">Using Google Sheets configuration</span>
+                </div>
+            ) : (
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4">
+                    <div className="flex items-start gap-2">
+                        <svg className="w-5 h-5 text-amber-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                        <div className="flex-1">
+                            <p className="text-sm text-amber-800 font-medium">Using fallback configuration</p>
+                            {loadError && <p className="text-xs text-amber-700 mt-1">{loadError}</p>}
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Generated Name Display - Font Size Reduced per Request */}
             <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-6 mb-8 text-center sticky top-20 z-40 shadow-sm">
                 <label className="text-xs font-bold text-indigo-500 tracking-wider mb-2 block uppercase">Generated Campaign Name</label>
@@ -139,16 +154,13 @@ const CampaignForm = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 space-y-2">
 
                 {/* Objective */}
-                {renderField("Objective", "objective", APP_CONFIG.objectives)}
+                {renderField("Objective", "objective", config.objectives)}
 
                 {/* Branding */}
-                {renderField("Branding", "branding", APP_CONFIG.brandings)}
-
-                {/* Category */}
-                {renderField("Category", "category", APP_CONFIG.categories)}
+                {renderField("Branding", "branding", config.brandings)}
 
                 {/* Product */}
-                {renderField("Product", "product", availableProducts, formData.branding ? "Select Product..." : "Select Branding First")}
+                {renderField("Product", "product", availableProducts, "Select Product...")}
 
                 {/* Audience (Not requested to be manual, but keeping standard select) */}
                 <div>
@@ -157,7 +169,7 @@ const CampaignForm = () => {
                 </div>
 
                 {/* Page */}
-                {renderField("Page (Optional)", "page", APP_CONFIG.pages)}
+                {renderField("Page (Optional)", "page", config.pages)}
 
                 {/* Date */}
                 <div>
