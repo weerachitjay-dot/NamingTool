@@ -40,8 +40,8 @@ const CampaignForm = () => {
     useEffect(() => {
         const formattedPage = formData.page ? `(${formData.page})` : '';
 
-        // Simplified: Brand-Product (no Category)
-        const productPart = [formData.branding, formData.product].filter(Boolean).join('-');
+        // Brand+Product (Joined by + per user request)
+        const productPart = [formData.branding, formData.product].filter(Boolean).join('+');
 
         const parts = [
             formData.objective,
